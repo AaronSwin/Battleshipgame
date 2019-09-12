@@ -1,32 +1,27 @@
-﻿using SwinGameSDK;
+using SwinGameSDK;
 
-namespace Battleship
+static class GameLogic
 {
-
-    static class GameLogic
+    public static void Main()
     {
-        public static void Main()
+        // Opens a new Graphics Window
+        SwinGame.OpenGraphicsWindow("Battleships", 800, 600);
+
+        // Load Resources
+        GameResources.LoadResources();
+
+        SwinGame.PlayMusic(GameResources.GameMusic("Background"));
+
+        // Game Loop
+        do
         {
-            // Opens a new Graphics Window
-            SwinGame.OpenGraphicsWindow("Battle Ships", 800, 600);
+            GameController.HandleUserInput();
+            GameController.DrawScreen();
+        } while (!((SwinGame.WindowCloseRequested() == true) | (GameController.CurrentState == GameState.Quitting)));
 
-            // Load Resources
-            LoadResources();
+        SwinGame.StopMusic();
 
-            SwinGame.PlayMusic(GameMusic("Background"));
-
-            // Game Loop
-            do
-            {
-                HandleUserInput();
-                DrawScreen();
-            }
-            while (!SwinGame.WindowCloseRequested() == true | CurrentState == GameState.Quitting);
-
-            SwinGame.StopMusic();
-
-            // Free Resources and Close Audio, to end the program.
-            FreeResources();
-        }
+        // Free Resources and Close Audio, to end the program.
+        GameResources.FreeResources();
     }
 }
