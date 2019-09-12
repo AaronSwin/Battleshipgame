@@ -1,121 +1,96 @@
 /// <summary>
-/// ''' AttackResult gives the result after a shot has been made.
-/// ''' </summary>
+/// The BattleShipsGame controls a big part of the game. It will add the two players
+/// to the game and make sure that both players ships are all deployed before starting the game.
+/// It also allows players to shoot and swap turns between player. It will also check if players
+/// are destroyed.
+/// </summary>
+
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
 
-public class AttackResult
+public class BattleShipsGame
 {
-    private ResultOfAttack _Value;
-    private Ship _Ship;
-    private string _Text;
-    private int _Row;
-    private int _Column;
+    /// <summary>
+    /// The attack delegate type is used to send notifications of the end of an
+    /// attack by a player or the AI.
+    /// </summary>
+    /// <param name="sender">the game sending the notification</param>
+    /// <param name="result">the result of the attack</param>
+    public delegate void AttackCompletedHandler(object sender, AttackResult result);
 
     /// <summary>
-    ///     ''' The result of the attack
-    ///     ''' </summary>
-    ///     ''' <value>The result of the attack</value>
-    ///     ''' <returns>The result of the attack</returns>
-    public ResultOfAttack Value
+    /// The AttackCompleted event is raised when an attack has completed.
+    /// </summary>
+    /// <remarks>
+    /// This is used by the UI to play sound effects etc.
+    /// </remarks>
+    public event AttackCompletedHandler AttackCompleted;
+
+    private Player[] _players = new Player[3];
+    private int _playerIndex = 0;
+
+    /// <summary>
+    /// The current player.
+    /// </summary>
+    /// <value>The current player</value>
+    /// <returns>The current player</returns>
+    /// <remarks>This value will switch between the two players as they have their attacks</remarks>
+    public Player Player
     {
-        get
+        get { return _players[_playerIndex]; }
+    }
+
+    /// <summary>
+    /// AddDeployedPlayer adds both players and will make sure
+    /// that the AI player deploys all ships
+    /// </summary>
+    /// <param name="p"></param>
+    public void AddDeployedPlayer(Player p)
+    {
+        if (_players[0] == null)
+            _players[0] = p;
+        else if (_players[1] == null)
         {
-            return _Value;
+            _players[1] = p;
+            CompleteDeployment();
         }
+        else
+            throw new ApplicationException("You cannot add another player, the game already has two players.");
     }
 
     /// <summary>
-    ///     ''' The ship, if any, involved in this result
-    ///     ''' </summary>
-    ///     ''' <value>The ship, if any, involved in this result</value>
-    ///     ''' <returns>The ship, if any, involved in this result</returns>
-    public Ship Ship
+    /// Assigns each player the other's grid as the enemy grid. This allows each player
+    /// to examine the details visable on the other's sea grid.
+    /// </summary>
+    private void CompleteDeployment()
     {
-        get
-        {
-            return _Ship;
-        }
+        _players[0].Enemy = new SeaGridAdapter(_players[1].PlayerGrid);
+        _players[1].Enemy = new SeaGridAdapter(_players[0].PlayerGrid);
     }
 
     /// <summary>
-    ///     ''' A textual description of the result.
-    ///     ''' </summary>
-    ///     ''' <value>A textual description of the result.</value>
-    ///     ''' <returns>A textual description of the result.</returns>
-    ///     ''' <remarks>A textual description of the result.</remarks>
-    public string Text
+    /// Shoot will swap between players and check if a player has been killed.
+    /// It also allows the current player to hit on the enemygrid.
+    /// </summary>
+    /// <param name="row">the row fired upon</param>
+    /// <param name="col">the column fired upon</param>
+    /// <returns>The result of the attack</returns>
+    public AttackResult Shoot(int row, int col)
     {
-        get
-        {
-            return _Text;
-        }
-    }
+        AttackResult newAttack;
+        int otherPlayer = (_playerIndex + 1) % 2;
 
-    /// <summary>
-    ///     ''' The row where the attack occurred
-    ///     ''' </summary>
-    public int Row
-    {
-        get
-        {
-            return _Row;
-        }
-    }
+        newAttack = Player.Shoot(row, col);
 
-    /// <summary>
-    ///     ''' The column where the attack occurred
-    ///     ''' </summary>
-    public int Column
-    {
-        get
-        {
-            return _Column;
-        }
-    }
+        // Will exit the game when all players ships are destroyed
+        if (_players[otherPlayer].IsDestroyed)
+            newAttack = new AttackResult(ResultOfAttack.GameOver, newAttack.Ship, newAttack.Text, row, col);
 
-    /// <summary>
-    ///     ''' Set the _Value to the PossibleAttack value
-    ///     ''' </summary>
-    ///     ''' <param name="value">either hit, miss, destroyed, shotalready</param>
-    public AttackResult(ResultOfAttack value, string text, int row, int column)
-    {
-        _Value = value;
-        _Text = text;
-        _Ship = null;
-        _Row = row;
-        _Column = column;
-    }
+        if (AttackCompleted != null) AttackCompleted.Invoke(this, newAttack);
 
-    /// <summary>
-    ///     ''' Set the _Value to the PossibleAttack value, and the _Ship to the ship
-    ///     ''' </summary>
-    ///     ''' <param name="value">either hit, miss, destroyed, shotalready</param>
-    ///     ''' <param name="ship">the ship information</param>
-    public AttackResult(ResultOfAttack value, Ship ship, string text, int row, int column) : this(value, text, row, column)
-    {
-        _Ship = ship;
-    }
+        // change player if the last hit was a miss
+        if (newAttack.Value == ResultOfAttack.Miss)
+            _playerIndex = otherPlayer;
 
-    /// <summary>
-    ///     ''' Displays the textual information about the attack
-    ///     ''' </summary>
-    ///     ''' <returns>The textual information about the attack</returns>
-    public override string ToString()
-    {
-        if (_Ship == null)
-            return Text;
-
-        return Text + " " + _Ship.Name;
+        return newAttack;
     }
 }
