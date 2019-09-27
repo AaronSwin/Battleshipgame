@@ -67,7 +67,7 @@ static class DeploymentController
                 GameController.EndDeployment();
             else if (UtilityFunctions.IsMouseInRectangle(UP_DOWN_BUTTON_LEFT, TOP_BUTTONS_TOP, DIR_BUTTONS_WIDTH,
                 TOP_BUTTONS_HEIGHT))
-                _currentDirection = Direction.LeftRight;
+                _currentDirection = Direction.UpDown; //This being set to UpDown is what caused the button bug
             else if (UtilityFunctions.IsMouseInRectangle(LEFT_RIGHT_BUTTON_LEFT, TOP_BUTTONS_TOP, DIR_BUTTONS_WIDTH,
                 TOP_BUTTONS_HEIGHT))
                 _currentDirection = Direction.LeftRight;
@@ -133,7 +133,7 @@ static class DeploymentController
         foreach (ShipName sn in Enum.GetValues(typeof(ShipName)))
         {
             int i = default(int);
-            i = (int) sn - 1;
+            i = (int)sn - 1;
             if (i >= 0)
             {
                 if (sn == _selectedShip)
@@ -159,7 +159,7 @@ static class DeploymentController
         foreach (ShipName sn in Enum.GetValues(typeof(ShipName)))
         {
             int i = default(int);
-            i = (int) sn - 1;
+            i = (int)sn - 1;
 
             if (UtilityFunctions.IsMouseInRectangle(SHIPS_LEFT, SHIPS_TOP + (i * SHIPS_HEIGHT), SHIPS_WIDTH,
                 SHIPS_HEIGHT))
